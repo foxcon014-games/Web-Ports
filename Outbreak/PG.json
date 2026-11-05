@@ -2,7 +2,7 @@
 "companyName": "PoisonGames",
 "productName": "C-Virus Game: Outbreak",
 "productVersion": "1",
-"dataUrl": "PG.data.unityweb",
+"dataUrl": "https://raw.githubusercontent.com/foxcon014-games/Web-Ports/main/Outbreak/PG.data.unityweb",
 "wasmCodeUrl": "PG.wasm.code.unityweb",
 "wasmFrameworkUrl": "PG.wasm.framework.unityweb",
 "graphicsAPI": ["WebGL 2.0","WebGL 1.0"],
