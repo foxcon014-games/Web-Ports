@@ -1,6 +1,6 @@
 {
 "TOTAL_MEMORY": 268435456,
-"dataUrl": "game.data.unityweb",
+"dataUrl": "https://raw.githubusercontent.com/foxcon014-games/Web-Ports/main/Rebel%20Forces/game.data.unityweb",
 "asmCodeUrl": "game.asm.code.unityweb",
 "asmMemoryUrl": "game.asm.memory.unityweb",
 "asmFrameworkUrl": "game.asm.framework.unityweb",
