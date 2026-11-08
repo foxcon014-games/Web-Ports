@@ -2,12 +2,45 @@
 <html lang="en-us">
 
 <head>
-
+<base href="https://cdn.jsdelivr.net/gh/foxcon014-games/Web-Ports@main/Outbreak/">
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>C-Virus Game: Outbreak</title>
-    
+     <script>
+(function () {
+  var orig = WebAssembly.instantiate;
+  WebAssembly.instantiate = function (source, imports) {
+    try {
+      if (imports) {
+        Object.keys(imports).forEach(function (ns) {
+          var obj = imports[ns];
+          if (!obj) return;
+          Object.keys(obj).forEach(function (k) {
+            if (/openurl/i.test(k)) {
+              console.warn("[blocked import]", ns + "." + k);
+              obj[k] = function () {};
+            }
+          });
+        });
+      }
+    } catch (e) {}
+    return orig.call(this, source, imports);
+  };
+  window.open = function () { return null; };
+})();
+</script>
+	<script>
+window.Garter = {
+  I: {
+    RequestAd: function () {},
+    GameStart: function () {},
+    GamePause: function () {},
+    GameResume: function () {},
+    GameEnd: function () {}
+  }
+};
+</script>
     <style>
         /* --- Core Layout to fill the screen --- */
         html, body {
