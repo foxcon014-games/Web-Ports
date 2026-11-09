@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en-us">
-
+	<script src="../UCS/F/Fonts.js"></script><script src="../UCS/S/Symbols.js"></script>
 <head>
-<base href="https://cdn.jsdelivr.net/gh/foxcon014-games/Web-Ports@main/Outbreak/">
+<base href="https://rawcdn.githack.com/foxcon014-games/Web-Ports/main/CVGO/">
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>C-Virus Game: Outbreak</title>
-     <script>
+   <script>
 (function () {
   var orig = WebAssembly.instantiate;
   WebAssembly.instantiate = function (source, imports) {
@@ -88,10 +88,10 @@ window.Garter = {
         .webgl-content .logo, .progress {position: absolute; left: 50%; top: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);}
         
         /* Using ./ to force local directory lookup */
-        .webgl-content .logo {background: url('./progressLogo.Dark.png') no-repeat center / contain; width: 154px; height: 130px;}
+        .webgl-content .logo {background: url('https://cdn.jsdelivr.net/gh/foxcon014-games/Web-Ports@main/Outbreak/progressLogo.Dark.png') no-repeat center / contain; width: 154px; height: 130px;}
         .webgl-content .progress {height: 18px; width: 141px; margin-top: 90px;}
-        .webgl-content .progress .empty {background: url('./progressEmpty.Dark.png') no-repeat right / cover; float: right; width: 100%; height: 100%; display: inline-block;}
-        .webgl-content .progress .full {background: url('./progressFull.Dark.png') no-repeat left / cover; float: left; width: 0%; height: 100%; display: inline-block;}
+        .webgl-content .progress .empty {background: url('https://cdn.jsdelivr.net/gh/foxcon014-games/Web-Ports@main/Outbreak/progressEmpty.Dark.png') no-repeat right / cover; float: right; width: 100%; height: 100%; display: inline-block;}
+        .webgl-content .progress .full {background: url('https://cdn.jsdelivr.net/gh/foxcon014-games/Web-Ports@main/Outbreak/progressFull.Dark.png') no-repeat left / cover; float: left; width: 0%; height: 100%; display: inline-block;}
 
              /* --- GTA III style launch screen overlay (Vortex green theme) --- */
         #launch_countdown_screen {

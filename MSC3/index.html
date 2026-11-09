@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Madalin Stunt Cars 3</title>
+  
+  <base href="https://rawcdn.githack.com/foxcon014-games/Web-Ports/main/MSC3/">
+  <body> <style>
+        /* --- Core Layout to fill the screen --- */
+        html, body {
+            padding: 0;
+            margin: 0;
+            background: #171717;
+            color: #fff;
+            font-family: sans-serif;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+        }
+        
+        /* Make sure the webgl-content wrapper fills the screen */
+        .webgl-content {
+            width: 100%;
+            height: 100%;
+        }
+
+        #unity-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #unity-canvas {
+            width: 100%;
+            height: 100%;
+            background: #231F20;
+            display: block;
+        }
+
+        #unity-canvas canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        /* --- LIGHT ONLY PROGRESS CSS --- */
+        .webgl-content * {border: 0; margin: 0; padding: 0}
+        .webgl-content {position: absolute; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);}
+
+        .webgl-content .logo, .progress {position: absolute; left: 50%; top: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);}
+        
+        /* Using ./ to force local directory lookup */
+        .webgl-content .logo {background: url('./progressLogo.Dark.png') no-repeat center / contain; width: 154px; height: 130px;}
+        .webgl-content .progress {height: 18px; width: 141px; margin-top: 90px;}
+        .webgl-content .progress .empty {background: url('./progressEmpty.Dark.png') no-repeat right / cover; float: right; width: 100%; height: 100%; display: inline-block;}
+        .webgl-content .progress .full {background: url('./progressFull.Dark.png') no-repeat left / cover; float: left; width: 0%; height: 100%; display: inline-block;}
+
+             /* --- GTA III style launch screen overlay (Vortex green theme) --- */
+        #launch_countdown_screen {
+									background:black !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            z-index: 100;
+            margin: 0;
+        }
+
+        .bootup-container {
+            margin: auto;
+            text-align: center;
+        }
+
+        .bootupscreentext {
+            color: #00ff00;
+            font-size: 28px;
+            font-family: sans-serif;
+            text-shadow: 0 0 4px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 40px #00ff00;
+        }
+
+        .bootupscreenbuttons {
+            background: #333;
+            color: #00ff00;
+            font-size: 20px;
+            margin: 0;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-family: sans-serif;
+            text-shadow: 0 0 7px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+            border: 2px solid #00ff00;
+            transition: all 0.9s ease;
+            box-sizing: border-box;
+        }
+
+        .bootupscreenbuttons:hover {
+            background: #222222;
+            box-shadow: 0 0 0 1px rgba(0,255,0,0.15) inset, 0 0 24px rgba(0,255,0,0.3);
+            transition: all 0.7s ease;
+            opacity: 0.65;
+        }
+
+        #loading-status {
+            margin-top: 15px;
+            min-height: 24px;
+        }
+    </style>
+  </head>
+<body>
+
+    <!-- Green launch screen -->
+    <div id="launch_countdown_screen">
+        <div class="bootup-container">
+            <h1 class="bootupscreentext" style="font-size:50px; margin:0 0 10px 0;">
+                Madalin Games Optimized By Vortex<br>
+                <span style="font-size:48px;">Welcome Vortex_User</span>
+            </h1>
+            <h3 class="bootupscreentext" style="margin: 10px 0;">
+                Madalin Stunt Cars 3<br>Ported By Connor Fox
+            </h3>
+            <h2 id="gameWillLaunchIn" class="bootupscreentext" style="margin:20px 0;">
+                Ready To Launch
+            </h2>
+            <div id="loading-status" class="bootupscreentext"></div>
+            <p style="margin-top:30px;">
+                <button id="skipCountdown" class="bootupscreenbuttons" onclick="startGame()">
+                    Launch Game
+                </button>
+            </p>
+        </div>
+    </div>
+<!-- The game container is hidden initially -->
+    <div class="webgl-content" id="gameContainer" style="display: none;">
+        <div id="unity-container">
+            <div id="unity-canvas"></div>
+        </div>
+    </div>
+
+    <!-- Inlined UnityProgress.js (same as original) -->
+    <script>
+    function UnityProgress(gameInstance, progress) {
+      if (!gameInstance.Module)
+        return;
+      if (!gameInstance.logo) {
+        gameInstance.logo = document.createElement("div");
+        gameInstance.logo.className = "logo";
+        gameInstance.container.appendChild(gameInstance.logo);
+      }
+      if (!gameInstance.progress) {    
+        gameInstance.progress = document.createElement("div");
+        gameInstance.progress.className = "progress";
+        gameInstance.progress.empty = document.createElement("div");
+        gameInstance.progress.empty.className = "empty";
+        gameInstance.progress.appendChild(gameInstance.progress.empty);
+        gameInstance.progress.full = document.createElement("div");
+        gameInstance.progress.full.className = "full";
+        gameInstance.progress.appendChild(gameInstance.progress.full);
+        gameInstance.container.appendChild(gameInstance.progress);
+      }
+      gameInstance.progress.full.style.width = (100 * progress) + "%";
+      gameInstance.progress.empty.style.width = (100 * (1 - progress)) + "%";
+      if (progress == 1)
+        gameInstance.logo.style.display = gameInstance.progress.style.display = "none";
+    }
+    </script>
+
+    <!-- Game launch logic: nothing loads until button is clicked -->
+    <script>
+    (function () {
+        var gameStarted = false;
+        var gameInstance = null;
+        var loaderScriptLoaded = false;
+
+        // Function to load the UnityLoader.js script dynamically
+        function loadUnityLoader(callback) {
+            if (loaderScriptLoaded) {
+                callback();
+                return;
+            }
+            var script = document.createElement('script');
+            script.src = 'UnityLoader35.js';
+            script.onload = function () {
+                loaderScriptLoaded = true;
+                callback();
+            };
+            script.onerror = function () {
+                document.getElementById('loading-status').textContent = 'ERR: Failed to load UnityLoader.js';
+            };
+            document.body.appendChild(script);
+        }
+
+        // Called when user clicks Launch Game
+        window.startGame = function () {
+            if (gameStarted) return;
+            gameStarted = true;
+
+            // Hide launch screen
+            document.getElementById('launch_countdown_screen').style.display = 'none';
+            // Show game container
+            document.getElementById('gameContainer').style.display = 'block';
+
+            // Load UnityLoader.js then instantiate the game
+            loadUnityLoader(function () {
+                // Now instantiate Unity
+                gameInstance = UnityLoader.instantiate(
+                    "unity-canvas",
+                    "game.json",
+                    {
+                        onProgress: UnityProgress
+                    }
+                );
+
+                // Dispatch resize after a short delay to ensure canvas fits
+                window.addEventListener('load', function () {
+                    setTimeout(function () {
+                        window.dispatchEvent(new Event('resize'));
+                    }, 500);
+                });
+            });
+        };
+
+        // Ensure startGame is globally available (already assigned above)
+    })();
+    </script>
+</body></html>
