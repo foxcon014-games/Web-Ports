@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Escape Road</title>
+    <style>
+        /* --- Core Layout to fill the screen --- */
+        html, body {
+            padding: 0;
+            margin: 0;
+            background: #171717;
+            color: #fff;
+            font-family: sans-serif;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+        }
+        
+        /* Make sure the webgl-content wrapper fills the screen */
+        .webgl-content {
+            width: 100%;
+            height: 100%;
+        }
+
+        #unity-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #unity-canvas {
+            width: 100%;
+            height: 100%;
+            background: #231F20;
+            display: block;
+        }
+
+        #unity-canvas canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        /* --- LIGHT ONLY PROGRESS CSS --- */
+        .webgl-content * {border: 0; margin: 0; padding: 0}
+        .webgl-content {position: absolute; top: 50%; left: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);}
+
+        .webgl-content .logo, .progress {position: absolute; left: 50%; top: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);}
+        
+        /* Using ./ to force local directory lookup */
+        .webgl-content .logo {background: url('./progressLogo.Dark.png') no-repeat center / contain; width: 154px; height: 130px;}
+        .webgl-content .progress {height: 18px; width: 141px; margin-top: 90px;}
+        .webgl-content .progress .empty {background: url('./progressEmpty.Dark.png') no-repeat right / cover; float: right; width: 100%; height: 100%; display: inline-block;}
+        .webgl-content .progress .full {background: url('./progressFull.Dark.png') no-repeat left / cover; float: left; width: 0%; height: 100%; display: inline-block;}
+
+             /* --- GTA III style launch screen overlay (Vortex green theme) --- */
+        #launch_countdown_screen {
+									background:black !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            z-index: 100;
+            margin: 0;
+        }
+
+        .bootup-container {
+            margin: auto;
+            text-align: center;
+        }
+
+        .bootupscreentext {
+            color: #00ff00;
+            font-size: 28px;
+            font-family: sans-serif;
+            text-shadow: 0 0 4px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 40px #00ff00;
+        }
+
+        .bootupscreenbuttons {
+            background: #333;
+            color: #00ff00;
+            font-size: 20px;
+            margin: 0;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-family: sans-serif;
+            text-shadow: 0 0 7px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+            border: 2px solid #00ff00;
+            transition: all 0.9s ease;
+            box-sizing: border-box;
+        }
+
+        .bootupscreenbuttons:hover {
+            background: #222222;
+            box-shadow: 0 0 0 1px rgba(0,255,0,0.15) inset, 0 0 24px rgba(0,255,0,0.3);
+            transition: all 0.7s ease;
+            opacity: 0.65;
+        }
+
+        #loading-status {
+            margin-top: 15px;
+            min-height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Launch screen overlay (GTA-style, green Vortex theme) -->
+    <div id="launch_countdown_screen">
+        <div class="bootup-container">
+            <h1 class="bootupscreentext" style="font-size:50px; margin:0 0 10px 0;">
+                AZ Games Optimized By Vortex<br>
+                <span class="bootupscreentext" style="font-size:48px;">Welcome Vortex_User</span>
+            </h1>
+            <h3 class="bootupscreentext" style="margin: 10px 0;">Escape Road<br>Ported By Connor Fox</h3>
+            <h2 id="gameWillLaunchIn" class="bootupscreentext" style="margin:20px 0;">Ready To Launch</h2>
+            <div id="loading-status" class="bootupscreentext"></div>
+            <p style="margin-top:30px;">
+                <button id="skipCountdown" class="bootupscreenbuttons" onclick="startGame()">Launch Game</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- The game container is hidden initially -->
+    <div class="webgl-content" id="gameContainer" style="display: none;">
+        <div id="unity-container">
+            <canvas id="unity-canvas" width="960" height="600" tabindex="-1" style="width:100%;height:100%;background:#231F20"></canvas>
+        </div>
+    </div>
+ 
+
+    <!-- Progress bar for modern loader -->
+    <script>
+    var _unityProgressUI = null;
+    function UnityProgress(progress) {
+      // modern createUnityInstance calls this with just the number 0..1
+      if (typeof progress !== "number") {
+        // old-style call with (gameInstance, progress) - ignore the first arg
+        if (arguments.length > 1) progress = arguments[1];
+        else return;
+      }
+      var container = document.getElementById("gameContainer");
+      if (!container) return;
+
+      if (!_unityProgressUI) {
+        _unityProgressUI = {};
+        _unityProgressUI.logo = document.createElement("div");
+        _unityProgressUI.logo.className = "logo";
+        container.appendChild(_unityProgressUI.logo);
+
+        _unityProgressUI.progress = document.createElement("div");
+        _unityProgressUI.progress.className = "progress";
+        _unityProgressUI.empty = document.createElement("div");
+        _unityProgressUI.empty.className = "empty";
+        _unityProgressUI.progress.appendChild(_unityProgressUI.empty);
+        _unityProgressUI.full = document.createElement("div");
+        _unityProgressUI.full.className = "full";
+        _unityProgressUI.progress.appendChild(_unityProgressUI.full);
+        container.appendChild(_unityProgressUI.progress);
+      }
+
+      _unityProgressUI.full.style.width = (100 * progress) + "%";
+      _unityProgressUI.empty.style.width = (100 * (1 - progress)) + "%";
+
+      if (progress >= 1) {
+        // hide and clean up so it never sticks
+        if (_unityProgressUI.logo) _unityProgressUI.logo.style.display = "none";
+        if (_unityProgressUI.progress) _unityProgressUI.progress.style.display = "none";
+        // also remove them after a short delay so they can't reappear
+        setTimeout(function() {
+          try {
+            if (_unityProgressUI.logo && _unityProgressUI.logo.parentNode)
+              _unityProgressUI.logo.parentNode.removeChild(_unityProgressUI.logo);
+            if (_unityProgressUI.progress && _unityProgressUI.progress.parentNode)
+              _unityProgressUI.progress.parentNode.removeChild(_unityProgressUI.progress);
+            _unityProgressUI = null;
+          } catch(e) {}
+        }, 200);
+      }
+    }
+    </script>
+
+    <!-- Game launch logic: nothing loads until button is clicked -->
+    <script>
+    (function () {
+        var gameStarted = false;
+        var unityInstance = null;
+        var loaderScriptLoaded = false;
+
+        function loadUnityLoader(callback) {
+            if (loaderScriptLoaded) { callback(); return; }
+            var script = document.createElement('script');
+            script.src = 'UnityLoader.js';
+            script.onload = function () {
+                loaderScriptLoaded = true;
+                callback();
+            };
+            script.onerror = function () {
+                document.getElementById('loading-status').textContent = 'ERR: Failed to load UnityLoader.js';
+            };
+            document.body.appendChild(script);
+        }
+
+        window.startGame = function () {
+            if (gameStarted) return;
+            gameStarted = true;
+
+            document.getElementById('launch_countdown_screen').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'block';
+
+            loadUnityLoader(function () {
+                var canvas = document.getElementById('unity-canvas');
+
+                var config = {
+                    dataUrl: "data.unityweb",
+                    frameworkUrl: "framework.unityweb+game.js",
+                    codeUrl: "wasm.unityweb",
+                    streamingAssetsUrl: "StreamingAssets",
+                    companyName: "1games.io",
+                    productName: "Escape Road",
+                    productVersion: "2.0"
+                };
+
+                createUnityInstance(canvas, config, function(progress) {
+                    UnityProgress(progress);
+                }).then(function(instance) {
+                    unityInstance = instance;
+                    // force-hide any leftover progress UI
+                    document.querySelectorAll(".logo, .progress").forEach(function(el) {
+                        el.style.display = "none";
+                        if (el.parentNode) el.parentNode.removeChild(el);
+                    });
+                    setTimeout(function(){ window.dispatchEvent(new Event('resize')); }, 300);
+                }).catch(function(err) {
+                    console.error(err);
+                    document.getElementById('loading-status').textContent = 'ERR: ' + (err.message || err);
+                });
+            });
+        };
+    })();
+    </script>
+</body>
+</html>
