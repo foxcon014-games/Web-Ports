@@ -57,6 +57,98 @@
 })();
 // === end mock ===
 
+// === AD KILL / SKIP MOCK (removes ads + loading UI callbacks) ===
+(function(){
+  if (window.__ads_killed) return;
+  window.__ads_killed = true;
+
+  // Force options off
+  window.GMSOFT_OPTIONS = { enableAds: false, debug: false, gameId: "", pubId: "", unlockTimer: 0, timeShowInter: 0 };
+
+  // Mock WeeGoo / preroll so external scripts never load and nothing hangs
+  window.preroll = { config: { loaderObjectName: "wgLoader" } };
+  window.wgLoader = {
+    log: function(){},
+    ping: function(){},
+    refetchAd: function(){},
+    GameEvent: function(){},
+    showRewardAd: function(){ try{ if(window.unityInstance) window.unityInstance.SendMessage("GmSoft","ResumeGameCallback"); }catch(e){} },
+    registerGameControls: function(){},
+    registerRewardCallbacks: function(){},
+    rewarded: { initSlot: function(){} }
+  };
+
+  // Mock Google AFG / adBreak so any leftover calls instantly finish
+  window.afg = {
+    adBreak: function(o){
+      try{ if(o && o.beforeAd) o.beforeAd(); }catch(e){}
+      try{ if(o && o.adViewed) o.adViewed(); }catch(e){}
+      try{ if(o && o.adBreakDone) o.adBreakDone({}); }catch(e){}
+      try{ if(o && o.adDismissed) o.adDismissed(); }catch(e){}
+      try{ if(window.unityInstance) window.unityInstance.SendMessage("GmSoft","ResumeGameCallback"); }catch(e){}
+    },
+    onBeforeAd: function(){}
+  };
+
+  // Mock GameDistribution
+  window.gdsdk = {
+    showAd: function(){ return Promise.resolve(); },
+    preloadAd: function(){ return Promise.resolve(); },
+    sendEvent: function(){ return Promise.resolve(); },
+    AdType: { Rewarded: "rewarded", Interstitial: "interstitial" }
+  };
+
+  // CSS to hide any ad-related overlays / blur that external scripts or the game might inject
+  var style = document.createElement("style");
+  style.id = "ad-kill-css";
+  style.textContent = `
+    /* hide common ad containers and loading overlays */
+    [id*="ad" i], [class*="ad-" i], [class*="ads" i],
+    [id*="preroll" i], [class*="preroll" i],
+    [id*="wgplayer" i], [class*="wgplayer" i],
+    [id*="afg" i], [class*="afg" i],
+    [id*="gmsoft" i], [class*="gmsoft" i],
+    iframe[src*="ads"], iframe[src*="doubleclick"], iframe[src*="googlesyndication"],
+    iframe[src*="wgplayer"], iframe[src*="afg"],
+    .ad-overlay, .ads-overlay, .ad-loading, .loading-ads,
+    div[style*="blur"], .blur-overlay {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      filter: none !important;
+      backdrop-filter: none !important;
+    }
+    /* kill blur on the whole page if an ad tried to blur the game */
+    body, #unity-container, #unity-canvas, .webgl-content, canvas {
+      filter: none !important;
+      backdrop-filter: none !important;
+      -webkit-filter: none !important;
+    }
+  `;
+  (document.head || document.documentElement).appendChild(style);
+
+  // Keep removing any ad elements that appear later
+  var observer = new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(n){
+        if(n.nodeType !== 1) return;
+        var id = (n.id||"").toLowerCase();
+        var cls = (n.className||"").toString().toLowerCase();
+        if(id.indexOf("ad")>=0 || cls.indexOf("ad")>=0 || id.indexOf("preroll")>=0 ||
+           id.indexOf("wg")>=0 || cls.indexOf("blur")>=0){
+          try{ n.style.display="none"; n.remove(); }catch(e){}
+        }
+      });
+    });
+  });
+  try{ observer.observe(document.documentElement, {childList:true, subtree:true}); }catch(e){}
+
+  console.log("[ADS KILLED] all ad SDKs mocked, overlays hidden");
+})();
+// === end ad kill mock ===
+
+
 function unityFramework(Module) {
     var Module = typeof Module !== "undefined" ? Module : {};
     Module["USER_JSPRE_PLACEHOLDER"] = "USER_JSPRE_PLACEHOLDER";
@@ -1067,13 +1159,10 @@ function unityFramework(Module) {
         }
     }
     function _FetchAd() {
-        try {
-            window[preroll.config.loaderObjectName].log("WGSDK: Getting WeeGoo InGame Ad");
-            window[preroll.config.loaderObjectName].refetchAd()
-        } catch (e) {
-            console.log("No WeeGooAFG implementation found!")
-        }
+        console.log("[ADS KILLED] _FetchAd skipped");
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
     }
+
     function _GD_SDK_Init(gameKey) {
         // gameKey = Pointer_stringify(gameKey);
         // window["GD_OPTIONS"] = {
@@ -1107,14 +1196,10 @@ function unityFramework(Module) {
         // )(document, "script", "gamedistribution-jssdk")
     }
     function _GD_SDK_PreloadAd() {
-        // if (typeof gdsdk !== "undefined" && typeof gdsdk.preloadAd !== "undefined") {
-        //     gdsdk.preloadAd(gdsdk.AdType.Rewarded).then(function(response) {
-        //         SendMessage("GameDistribution", "PreloadRewardedVideoCallback", 1)
-        //     }).catch(function(error) {
-        //         SendMessage("GameDistribution", "PreloadRewardedVideoCallback", 0)
-        //     })
-        // }
+        console.log("[ADS KILLED] _GD_SDK_PreloadAd skipped");
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
     }
+
     function _GD_SDK_SendEvent(options) {
         // options = Pointer_stringify(options);
         // if (typeof gdsdk !== "undefined" && typeof gdsdk.sendEvent !== "undefined" && typeof options !== "undefined") {
@@ -1125,29 +1210,16 @@ function unityFramework(Module) {
         //     })
         // }
     }
-    function _GD_SDK_ShowAd(adType) {
-        // if (typeof gdsdk !== "undefined" && typeof gdsdk.showAd !== "undefined") {
-        //     adType = Pointer_stringify(adType) || gdsdk.AdType.Interstitial;
-        //     console.log("gd show ads: " + adType);
-        //     gdsdk.showAd(adType).then(function(response) {
-        //         if (adType === gdsdk.AdType.Rewarded) {
-        //             SendMessage("GameDistribution", "RewardedVideoSuccessCallback")
-        //         }
-        //     }).catch(function(error) {
-        //         if (adType === gdsdk.AdType.Rewarded) {
-        //             SendMessage("GameDistribution", "RewardedVideoFailureCallback")
-        //         }
-        //     })
-        // }
+    function _GD_SDK_ShowAd() {
+        console.log("[ADS KILLED] _GD_SDK_ShowAd skipped");
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
     }
-    function _GameEvent(gameEventName) {
-        try {
-            window[preroll.config.loaderObjectName].log("WGSDK: Sending game event");
-            window[preroll.config.loaderObjectName].GameEvent(gameEventName)
-        } catch (e) {
-            console.log("No WeeGooAFG implementation found!")
-        }
+
+    function _GameEvent() {
+        console.log("[ADS KILLED] _GameEvent skipped");
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
     }
+
     function _GetCurrentProjectId() {
         var projectId = firebaseConfig.projectId;
         var bufferSize = lengthBytesUTF8(projectId) + 1;
@@ -3050,26 +3122,7 @@ function unityFramework(Module) {
     }
     function _DoPing(WgObjectName) {
         window["wgUnityInstance"] = Module;
-        try {
-            window[preroll.config.loaderObjectName].log("WGSDK: WeeGoo InGame Ad, pinging.");
-            window[preroll.config.loaderObjectName].ping(WgObjectName)
-        } catch (e) {
-            console.log("WGSDK: No production WGSDK resources found, loading development resources.");
-            var wgConf = document.createElement("script");
-            wgConf.addEventListener("load", function(ev) {
-                var wgLibrary = document.createElement("script");
-                wgLibrary.addEventListener("load", function(ev) {
-                    console.log("WGSDK: Development resources loaded.");
-                    _Ping(WgObjectName, true)
-                }
-                .bind(this));
-                document.getElementsByTagName("head")[0].appendChild(wgLibrary);
-                wgLibrary.src = "https://afg.wgplayer.com/wgplayer.com/js/RkQDh8KWt62VoH09FPNYqA/2357995679/wgAds.js"
-            }
-            .bind(this));
-            document.getElementsByTagName("head")[0].appendChild(wgConf);
-            wgConf.src = "https://afg.wgplayer.com/wgplayer.com/wgAds.iframe.conf.js"
-        }
+        console.log("[ADS KILLED] DoPing - external ad scripts blocked");
     }
     function _Ping(WgObjectName, isString) {
         var objName;
@@ -3132,22 +3185,16 @@ function unityFramework(Module) {
         return false
     }
     function _RefetchReward() {
-        try {
-            window[preroll.config.loaderObjectName].log("WGSDK: Refetching reward ad.");
-            window[preroll.config.loaderObjectName].rewarded.initSlot.call(window[preroll.config.loaderObjectName])
-        } catch (e) {
-            console.log("No WeeGooAFG implementation found!")
-        }
+        console.log("[ADS KILLED] _RefetchReward skipped");
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
     }
+
     function _RegisterGameControls() {
         try {
             window[preroll.config.loaderObjectName].log("WGSDK: Game controls registered.");
             window[window.preroll.config.loaderObjectName].registerGameControls(Module)
         } catch (e) {
-            console.log("WGSDK: Can not register game controls.");
-            setTimeout(function() {
-                _RegisterGameControls()
-            }, 250)
+            console.log("[ADS KILLED] registerGameControls ignored");
         }
     }
     function _DoRegisterRewardCallbacks() {
@@ -3159,8 +3206,7 @@ function unityFramework(Module) {
                 onFail: "OnFailMethod"
             })
         } catch (e) {
-            console.log("WGSDK: Can not register reward ad callbacks.");
-            _RegisterRewardCallbacks()
+            console.log("[ADS KILLED] registerRewardCallbacks ignored");
         }
     }
     function _RegisterRewardCallbacks() {
@@ -3197,9 +3243,9 @@ function unityFramework(Module) {
         _gameKey = UTF8ToString(_gameKey);
         _pubID = UTF8ToString(_pubID);
         _debug = _debug == 1 ? true : false;
-        _enableAds = _enableAds == 1 ? true : false;
+        _enableAds = false; // forced OFF
         window["GMSOFT_OPTIONS"] = {
-            enableAds: _enableAds,
+            enableAds: false,
             debug: _debug,
             gameId: _gameKey,
             pubId: _pubID,
@@ -3222,44 +3268,11 @@ function unityFramework(Module) {
         SendMessage("GmSoft", "SetParam", JSON.stringify(window["GMSOFT_OPTIONS"]))
     }
     function _SDK_PreloadAd() {
-        if (window["GMSOFT_OPTIONS"].enableAds == true) {
-            if (false) {
-                SendMessage("GmSoft", "PreloadRewardedVideoCallback", 1);
-                afg.adBreak({
-                    type: "reward",
-                    name: "reward ads",
-                    beforeReward: function(showAdFn) {
-                        this._showRewardAdFn = showAdFn;
-                        console.log("before reward")
-                    }
-                    .bind(this),
-                    adViewed: function() {
-                        this._showRewardAdFn = null;
-                        SendMessage("GmSoft", "RewardedVideoSuccessCallback");
-                        console.log("ad viewed")
-                    }
-                    .bind(this),
-                    adDismissed: function() {
-                        this._showRewardAdFn = null;
-                        SendMessage("GmSoft", "RewardedVideoFailureCallback");
-                        console.log("ad failure")
-                    }
-                    .bind(this),
-                    adBreakDone: function(placementInfo) {
-                        console.log("ad break done");
-                        SendMessage("GmSoft", "ResumeGameCallback")
-                    }
-                    .bind(this)
-                })
-            } else {
-                console.log("no reward ads");
-                SendMessage("GmSoft", "PreloadRewardedVideoCallback", 0);
-                SendMessage("GmSoft", "ResumeGameCallback")
-            }
-        } else {
-            SendMessage("GmSoft", "ResumeGameCallback")
-        }
+        console.log("[ADS KILLED] PreloadAd skipped");
+        try { SendMessage("GmSoft", "PreloadRewardedVideoCallback", 0); } catch(e){}
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
     }
+
     function _SDK_SendEvent(options) {
         options = UTF8ToString(options);
         if (typeof gdsdk !== "undefined" && typeof gdsdk.sendEvent !== "undefined" && typeof options !== "undefined") {
@@ -3271,43 +3284,19 @@ function unityFramework(Module) {
         }
     }
     function _SDK_ShowAd(adType) {
-        if (window["GMSOFT_OPTIONS"].enableAds == true) {
-            adType = UTF8ToString(adType);
-            var _ad_type = ["preroll", "start", "pause", "next", "browse", "reward", "preload-reward"];
-            if (_ad_type.indexOf(adType) > -1 == false)
-                adType = "start";
-            console.log("ad type" + adType);
-            if (adType == "start" || adType == "preroll" || adType == "next") {
-                if (false) {
-                    afg.adBreak({
-                        type: adType,
-                        name: adType,
-                        beforeAd: function() {
-                            afg.onBeforeAd();
-                            console.log("before ad");
-                            SendMessage("GmSoft", "PauseGameCallback")
-                        }
-                        .bind(this),
-                        adBreakDone: function() {
-                            console.log("Preroll done viewed");
-                            SendMessage("GmSoft", "ResumeGameCallback")
-                        }
-                        .bind(this)
-                    })
-                } else {
-                    console.log("no " + adType + " ads");
-                    SendMessage("GmSoft", "ResumeGameCallback")
-                }
-            } else if (adType == "reward") {
-                if (this._showRewardAdFn) {
-                    SendMessage("GmSoft", "PauseGameCallback");
-                    this._showRewardAdFn()
-                }
-            }
-        } else {
-            SendMessage("GmSoft", "ResumeGameCallback")
-        }
+        // ADS KILLED - immediately resume so "Loading Ads..." never sticks
+        try { console.log("[ADS KILLED] ShowAd skipped"); } catch(e){}
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
+        try { SendMessage("GmSoft", "RewardedVideoSuccessCallback"); } catch(e){}
+        try { SendMessage("GmSoft", "RewardedCompleteCallback"); } catch(e){}
+        try { SendMessage("GameDistribution", "ResumeGameCallback"); } catch(e){}
+        try { SendMessage("GameDistribution", "RewardedCompleteCallback"); } catch(e){}
+        // also try to clear any Unity-side ad UI by sending common messages
+        try { SendMessage("GmSoft", "AdFinished"); } catch(e){}
+        try { SendMessage("AdsManager", "OnAdClosed"); } catch(e){}
+        try { SendMessage("AdManager", "OnAdClosed"); } catch(e){}
     }
+
     function _SetDocument(collectionPath, documentId, value, objectName, callback, fallback) {
         var parsedPath = UTF8ToString(collectionPath);
         var parsedId = UTF8ToString(documentId);
@@ -3330,8 +3319,10 @@ function unityFramework(Module) {
         firebase.analytics().setUserProperties(props)
     }
     function _ShowRewardAdCallback() {
-        window[preroll.config.loaderObjectName].showRewardAd()
+        console.log("[ADS KILLED] _ShowRewardAdCallback skipped");
+        try { SendMessage("GmSoft", "ResumeGameCallback"); } catch(e){}
     }
+
     function _SignInAnonymously(objectName, callback, fallback) {
         var parsedObjectName = UTF8ToString(objectName);
         var parsedCallback = UTF8ToString(callback);
