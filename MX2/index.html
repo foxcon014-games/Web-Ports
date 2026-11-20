@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+			<base href="https://rawcdn.githack.com/foxcon014-games/Web-Ports/main/MX2/">
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+    <link rel="stylesheet" href="assets/css/app.css" type="text/css" />
+    <title>Moto X3M 2</title>
+    <!-- BUILD_STAMP: 2026-11-20-vortex-launch -->
+    <style>
+      html, body {
+        padding: 0;
+        margin: 0;
+        background: #171717;
+        color: #fff;
+        font-family: sans-serif;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+      }
+      #launch_countdown_screen {
+        background: black !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        z-index: 100;
+        margin: 0;
+      }
+      .bootup-container {
+        margin: auto;
+        text-align: center;
+      }
+      .bootupscreentext {
+        color: #00ff00;
+        font-size: 28px;
+        font-family: sans-serif;
+        text-shadow: 0 0 4px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 40px #00ff00;
+      }
+      .bootupscreenbuttons {
+        background: #333;
+        color: #00ff00;
+        font-size: 20px;
+        margin: 0;
+        padding: 2px 6px;
+        cursor: pointer;
+        font-family: sans-serif;
+        text-shadow: 0 0 7px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+        border: 2px solid #00ff00;
+        transition: all 0.9s ease;
+        box-sizing: border-box;
+      }
+      .bootupscreenbuttons:hover {
+        background: #222222;
+        box-shadow: 0 0 0 1px rgba(0, 255, 0, 0.15) inset, 0 0 24px rgba(0, 255, 0, 0.3);
+        transition: all 0.7s ease;
+        opacity: 0.65;
+      }
+      #game-root {
+        display: none;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="launch_countdown_screen">
+      <div class="bootup-container">
+        <h1 class="bootupscreentext" style="font-size: 50px; margin: 0 0 10px 0">
+          MadPuffers Optimized By Vortex<br />
+          <span class="bootupscreentext" style="font-size: 48px">Welcome Vortex_User</span>
+        </h1>
+        <h3 class="bootupscreentext" style="margin: 10px 0">
+          Moto X3M 2<br />Ported By Connor Fox
+        </h3>
+        <h2 id="gameWillLaunchIn" class="bootupscreentext" style="margin: 20px 0">Ready To Launch</h2>
+        <div id="loading-status" class="bootupscreentext"></div>
+        <p style="margin-top: 30px">
+          <button id="skipCountdown" class="bootupscreenbuttons" type="button" onclick="startGame()">
+            Launch Game
+          </button>
+        </p>
+      </div>
+    </div>
+
+    <div id="game-root">
+      <div id="content"></div>
+      <div id="orientation"></div>
+      <div id="loader">Loading ...</div>
+    </div>
+
+    <script>
+      window.adsbygoogle = [];
+      window.adBreak = window.adConfig = function () {};
+      window.showNextAd = function () {};
+      window.ID = {
+        init: function () {},
+        login: function () {},
+        getLoginStatus: function (cb) {
+          if (cb) cb({ status: "not_linked" });
+        },
+        ads: { init: function () {} },
+        Event: { subscribe: function () {} },
+        GameAPI: { Achievements: { list: function () {} } },
+      };
+      window.open = function () {
+        return null;
+      };
+      document.addEventListener(
+        "click",
+        function (e) {
+          var t = e.target;
+          while (t && t.nodeName !== "A") t = t.parentElement;
+          if (t && t.getAttribute("target") === "_blank") t.removeAttribute("target");
+        },
+        true
+      );
+
+      var gameStarted = false;
+      var scripts = [
+        "assets/lib/nape.min.js",
+        "assets/lib/jquery-3.1.1.min.js",
+        "assets/lib/easeljs-0.8.2.combined.js",
+        "assets/lib/bluebird.min.js",
+        "assets/lib/phaser.min.js",
+        "assets/lib/phaser-cachebuster.min.js",
+        "assets/lib/phaser-super-storage.min.js",
+        "assets/lib/dragonBones.min.js",
+        "motox3m2.min.js",
+      ];
+
+      function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+          var s = document.createElement("script");
+          s.src = src;
+          s.async = false;
+          if (src.indexOf("nape.min.js") !== -1) {
+            s.text = 'var nape = "nape.min.js";';
+          }
+          s.onload = resolve;
+          s.onerror = function () {
+            reject(new Error("Failed: " + src));
+          };
+          document.body.appendChild(s);
+        });
+      }
+
+      window.startGame = function () {
+        if (gameStarted) return;
+        gameStarted = true;
+        var status = document.getElementById("loading-status");
+        var btn = document.getElementById("skipCountdown");
+        if (btn) btn.disabled = true;
+        if (status) status.textContent = "Loading...";
+
+        document.getElementById("launch_countdown_screen").style.display = "none";
+        document.getElementById("game-root").style.display = "block";
+
+        (async function () {
+          try {
+            for (var i = 0; i < scripts.length; i++) {
+              if (status) status.textContent = "Loading " + (i + 1) + "/" + scripts.length;
+              await loadScript(scripts[i]);
+            }
+            if (status) status.textContent = "";
+          } catch (err) {
+            console.error(err);
+            if (status) status.textContent = "ERR: " + err.message;
+            document.getElementById("launch_countdown_screen").style.display = "flex";
+            document.getElementById("game-root").style.display = "none";
+            gameStarted = false;
+            if (btn) btn.disabled = false;
+          }
+        })();
+      };
+    </script>
+  </body>
+</html>
