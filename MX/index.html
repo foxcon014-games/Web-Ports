@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+			<base href="https://rawcdn.githack.com/foxcon014-games/Web-Ports/main/MX/">
+			  <title>Moto X3M</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+    <link rel="stylesheet" href="assets/css/app.css" type="text/css" />    
+  </head>
+  <body>
+    <script type="text/javascript" src="assets/box2dweb/nape.min.js">
+      var nape = "nape.min.js";
+    </script>
+    <script type="text/javascript" src="motox3m.min.js"></script>
+			<script>
+// ==UserScript==
+// @name         Block All New Tabs and Popups Silently
+// @version      1.0
+// @description  Blocks window.open and target="_blank" popups without prompts
+// @author       You
+// @run-at       document-start
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Override window.open to do nothing
+    window.open = function() {
+        return null;
+    };
+
+    // Prevent links from opening in new tabs
+    document.addEventListener('click', function(event) {
+        let target = event.target;
+        while (target && target.nodeName !== 'A') {
+            target = target.parentElement;
+        }
+        if (target && target.getAttribute('target') === '_blank') {
+            target.removeAttribute('target');
+        }
+    }, true);
+})();
+</script>
+
+  </body>
+</html>
